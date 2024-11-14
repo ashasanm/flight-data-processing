@@ -31,30 +31,28 @@ Celery (for asynchronous task processing)
 Step-by-Step Setup
 
 ### Step-by-Step Setup
-1. Clone the Repository
-`bash
-git clone https://github.com/yourusername/flight-data-processing.git
-cd flight-data-processing`
+### 1. Clone the Repository
+  - `git clone https://github.com/yourusername/flight-data-processing.git
+  cd flight-data-processing`
 
-2.Setup ENV
-You can ask me for .env or follow the example.envi file and customize on your own
+### 2.Setup ENV
+   - You can ask me for `.env` or follow the `example.envi` file and customize on your own
 
-3. Docker Setup
+### 3. Docker Setup
 Build and start the application with Docker Compose:
 
 `bash
 docker-compose up --build`
 This will build and start the following services:
 
-Django Backend: The Django application that exposes an API to interact with the processed data.
-PostgreSQL: The database service to store the processed flight data.
-Redis: The message broker for Celery.
-Celery: For processing data asynchronously.
-Spark: The data processing engine that processes the flight data
+- Django Backend: The Django application that exposes an API to interact with the processed data.
+- PostgreSQL: The database service to store the processed flight data.
+- Redis: The message broker for Celery.
+- Celery: For processing data asynchronously.
+- Spark: The data processing engine that processes the flight data
 
-4. Check Delayed Flights
+### 4. Check Delayed Flights
 To check the total number of delayed flights (both arrival and departure delays), you can visit the following URL in your browser:
 
-`bash
-http://localhost:8000/api/delayed-flights/`
+`http://localhost:8000/api/delayed-flights/`
 This endpoint will return a list of flights with their delay statuses, calculated based on the actual and estimated times of departure and arrival.
