@@ -1,0 +1,114 @@
+services:
+  # Database service (PostgreSQL)
+  psqldb:
+    image: postgres:latest
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "${POSTGRES_DB}" ]
+      interval: 3s # Check every 3 seconds
+      retries: 3 # Only retry 3 times
+      start_period: 5s # Start healthchecks 5 seconds after container starts
+      timeout: 2s # Timeout after 2 seconds
+
+  # Spark service (for data processing)
+  spark:
+    build: .
+    environment:
+      - SPARK_MODE=${SPARK_MODE}
+    depends_on:
+      - psqldb # Spark doesn't need the database to be healthy, just starts after psqldb
+    ports:
+      - "${SPARK_UI_PORT}:8080"
+    networks:
+      - backend
+
+  # Web (Django) service
+  djangobackend:
+    build: .
+    command: >
+      bash -c "
+        python manage.py makemigrations &&
+        python manage.py migrate &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - .:/app
+    depends_on:
+      - psqldb
+      - redis
+    networks:
+      - backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+
+  # Redis service (used by Celery as the message broker)
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - backend
+
+  # Celery worker service
+  celery:
+    build: .
+    command: python -m celery -A flight_data worker --loglevel=info
+    depends_on:
+      - redis
+      - psqldb
+    volumes:
+      - .:/app
+    networks:
+      - backend
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+
+  # Celery beat service (optional - if you need periodic tasks)
+  celery-beat:
+    build:
+      context: .
+    command: python -m celery -A flight_data beat --loglevel=info
+    depends_on:
+      - redis
+      - psqldb
+    volumes:
+      - .:/app
+    networks:
+      - backend
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+
+  # Data Processor service (runs the run_data_processor management command)
+  data_processor:
+    build: .
+    command: [ "python", "manage.py", "run_data_processor" ]
+    depends_on:
+      - psqldb
+      - redis
+    volumes:
+      - .:/app
+    networks:
+      - backend
+    environment:
+      - DJANGO_SETTINGS_MODULE=flight_data.settings # Set your Django settings module
+    restart: "no" # Don't restart this service automatically after completion
+
+networks:
+  backend:
+    driver: bridge
