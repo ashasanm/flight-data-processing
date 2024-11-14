@@ -13,6 +13,7 @@ parts/
 sdist/
 var/
 *.log
+*.pyc
 
 # Django
 *.log
@@ -25,6 +26,9 @@ var/
 *.pot
 *.pyc
 *.pyo
+*.bak
+*.dat
+*.dir
 staticfiles/
 media/
 
