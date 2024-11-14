@@ -1,0 +1,81 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+sdist/
+var/
+*.log
+
+# Django
+*.log
+*.pot
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+*.log
+*.pot
+*.pyc
+*.pyo
+staticfiles/
+media/
+
+# Docker
+*.dockerignore
+Dockerfile
+docker-compose.yml
+.docker/
+
+# Virtual Environment
+venv/
+.env/
+.venv/
+.env.*  
+
+# Pytest
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# MacOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Python environment and package management
+.pip/
+.pytest_cache/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Secrets
+*.env
+*.env.*
+*.ini
+*.json
+*.yaml
+*.yml
+*.pem
+
+# Celery
+celerybeat-schedule
+celeryd.pid
+
+# Local development server logs (if any)
+*.log
