@@ -132,10 +132,6 @@ class OAGProcessor:
         """
         Calculates delays (departure and arrival) and returns the updated DataFrame with delay information.
         """
-        check_df = df_with_data.select(
-            "arrival_actual_inGate", "arrival_estimated_inGate"
-        )
-        logger.info(check_df.show(truncate=False))
         # Parse the datetime strings to timestamp data type
         df_with_delays = df_with_data.withColumn(
             "departure_actual_outGate_ts",
