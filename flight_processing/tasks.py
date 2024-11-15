@@ -1,8 +1,8 @@
 # myapp/tasks.py
 from celery import shared_task
-from flight_processing.spark_utils.spark_processor import SparkProcessor
-from flight_processing.data_processor.adsb_processor import ADSBProcessor
-from flight_processing.data_processor.oag_processor import OAGProcessor
+from flight_processing.utils.data_processor.spark_processor import SparkProcessor
+from flight_processing.utils.data_processor.adsb_processor import ADSBProcessor
+from flight_processing.utils.data_processor.oag_processor import OAGProcessor
 from datetime import datetime
 import logging
 

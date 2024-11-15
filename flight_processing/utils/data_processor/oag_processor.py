@@ -6,8 +6,8 @@ from pyspark.sql.functions import col, explode, unix_timestamp, when, to_timesta
 from pyspark.sql.types import FloatType
 from flight_processing.models import Airline, Airport, Flight, FlightStatus
 import logging
-from flight_processing.spark_utils.spark_processor import SparkProcessor
-from flight_processing.data_processor._base import BaseProcessor
+from flight_processing.utils.data_processor.spark_processor import SparkProcessor
+from flight_processing.utils.data_processor._base import BaseProcessor
 
 # Initialize Django environment
 django.setup()

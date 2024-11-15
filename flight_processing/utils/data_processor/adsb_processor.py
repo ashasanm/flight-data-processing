@@ -4,8 +4,8 @@ from django.utils import timezone
 from flight_processing.models import FlightTracking
 from pyspark.sql import DataFrame, Row
 
-from flight_processing.spark_utils.spark_processor import SparkProcessor
-from flight_processing.data_processor._base import BaseProcessor
+from flight_processing.utils.data_processor.spark_processor import SparkProcessor
+from flight_processing.utils.data_processor._base import BaseProcessor
 
 logger = logging.getLogger(__name__)
 

@@ -1,7 +1,7 @@
 # flight_processing/management/commands/run_data_processor.py
 from django.core.management.base import BaseCommand
-from flight_processing.data_processor.oag_processor import OAGProcessor
-from flight_processing.data_processor.adsb_processor import ADSBProcessor
+from flight_processing.utils.data_processor.oag_processor import OAGProcessor
+from flight_processing.utils.data_processor.adsb_processor import ADSBProcessor
 import logging
 
 logger = logging.getLogger(__name__)
