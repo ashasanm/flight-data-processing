@@ -2,6 +2,7 @@ import os
 import logging
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
+from pyspark.sql import DataFrame
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
@@ -20,7 +21,7 @@ class SparkProcessor:
         """
         self.spark = None
 
-    def get_spark_session(self):
+    def get_spark_session(self) -> None:
         """
         Creates or retrieves the Spark session for the Django app.
         Configures Spark settings through Django settings.py if needed.
@@ -39,7 +40,7 @@ class SparkProcessor:
                 raise ImproperlyConfigured(f"Error initializing Spark session: {e}")
         return self.spark
 
-    def load_json_data(self, file_path: str):
+    def load_json_data(self, file_path: str) -> DataFrame:
         """
         Loads a JSON file into a Spark DataFrame with error handling and corrupt record management.
         Handles bad records using permissive mode and logs all steps.
@@ -75,7 +76,7 @@ class SparkProcessor:
             logger.error(f"Error loading JSON data from {file_path}: {e}")
             raise RuntimeError(f"Error loading JSON data from {file_path}: {e}")
 
-    def log_corrupt_records(self, df):
+    def log_corrupt_records(self, df: DataFrame):
         """
         Logs any corrupt records from the DataFrame by filtering for the '_corrupt_record' column.
         """

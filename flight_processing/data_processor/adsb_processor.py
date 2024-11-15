@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from django.utils import timezone
 from flight_processing.models import FlightTracking
 from pyspark.sql import DataFrame, Row
 
@@ -65,7 +66,8 @@ class ADSBProcessor(BaseProcessor):
 
     def _process_timestamp_last_update(self, last_update: int) -> datetime:
         """Convert Timestamp to Django UNIX timestmap compatible"""
-        return datetime.fromtimestamp(last_update)
+        naive_datetime = datetime.fromtimestamp(last_update)  # This creates a naive datetime
+        return timezone.make_aware(naive_datetime, timezone.get_current_timezone())
 
     def _save_flight_tracking_in_batch(
         self, flight_tracking_objs: list[FlightTracking]

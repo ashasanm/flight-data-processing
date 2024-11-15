@@ -3,29 +3,29 @@ services:
   psqldb:
     image: postgres:latest
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${DATABASE__POSTGRES_DB}
+      POSTGRES_USER: ${DATABASE__POSTGRES_USER}
+      POSTGRES_PASSWORD: ${DATABASE__POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     networks:
       - backend
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "${POSTGRES_DB}" ]
-      interval: 3s # Check every 3 seconds
-      retries: 3 # Only retry 3 times
-      start_period: 5s # Start healthchecks 5 seconds after container starts
-      timeout: 2s # Timeout after 2 seconds
+      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "${DATABASE__POSTGRES_DB}" ]
+      interval: 3s
+      retries: 3
+      start_period: 5s
+      timeout: 2s
 
   # Spark service (for data processing)
   spark:
     build: .
     environment:
-      - SPARK_MODE=${SPARK_MODE}
+      - SPARK_MODE=${SPARK__MODE}
     depends_on:
-      - psqldb # Spark doesn't need the database to be healthy, just starts after psqldb
+      - psqldb
     ports:
-      - "${SPARK_UI_PORT}:8080"
+      - "${SPARK__UI_PORT}:8080"
     networks:
       - backend
 
@@ -48,12 +48,12 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
-      - DJANGO_DEBUG=${DJANGO_DEBUG}
-      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DJANGO_SECRET_KEY=${DJANGO__SECRET_KEY}
+      - DJANGO_DEBUG=${DJANGO__DEBUG}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO__ALLOWED_HOSTS}
+      - POSTGRES_DB=${DATABASE__POSTGRES_DB}
+      - POSTGRES_USER=${DATABASE__POSTGRES_USER}
+      - POSTGRES_PASSWORD=${DATABASE__POSTGRES_PASSWORD}
 
   # Redis service (used by Celery as the message broker)
   redis:
@@ -75,13 +75,12 @@ services:
     networks:
       - backend
     environment:
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - CELERY_BROKER_URL=${CELERY__BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY__RESULT_BACKEND}
 
   # Celery beat service (optional - if you need periodic tasks)
   celery-beat:
-    build:
-      context: .
+    build: .
     command: python -m celery -A flight_data beat --loglevel=info
     depends_on:
       - redis
@@ -91,8 +90,8 @@ services:
     networks:
       - backend
     environment:
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - CELERY_BROKER_URL=${CELERY__BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY__RESULT_BACKEND}
 
   # Data Processor service (runs the run_data_processor management command)
   data_processor:
@@ -106,7 +105,7 @@ services:
     networks:
       - backend
     environment:
-      - DJANGO_SETTINGS_MODULE=flight_data.settings # Set your Django settings module
+      - DJANGO_SETTINGS_MODULE=flight_data.settings
     restart: "no" # Don't restart this service automatically after completion
 
 networks:

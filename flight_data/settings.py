@@ -1,23 +1,23 @@
-import os
+import logging
 from pathlib import Path
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
+from configs import config  # Import your Appconfig
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-default-secret-key")
+SECRET_KEY = config.django.SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+DEBUG = config.django.DEBUG
 
-if os.getenv("DJANGO_ALLOWED_HOSTS"):
-    ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS").split(",")
-else:
-    ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config.django.ALLOWED_HOSTS
+
+# Static files (CSS, JavaScript, images)
+STATIC_URL = '/static/'
+
+# If you're serving static files in production, you may also want to set:
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Application definition
 INSTALLED_APPS = [
@@ -64,50 +64,22 @@ WSGI_APPLICATION = "flight_data.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB"),
-        "USER": os.getenv("POSTGRES_USER"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("POSTGRES_HOST"),
-        "PORT": os.getenv("POSTGRES_PORT"),
+        "NAME": config.database.POSTGRES_DB,
+        "USER": config.database.POSTGRES_USER,
+        "PASSWORD": config.database.POSTGRES_PASSWORD,
+        "HOST": config.database.POSTGRES_HOST,
+        "PORT": config.database.POSTGRES_PORT,
     }
 }
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
-
-# Internationalization
-LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
-USE_I18N = True
-USE_TZ = False
-
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# CELERY Configuration
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+# Celery Configuration
+CELERY_BROKER_URL = config.celery.BROKER_URL
+CELERY_RESULT_BACKEND = config.celery.RESULT_BACKEND
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 
-# LOGGING Configuration
+# Logging Configuration
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -150,26 +122,16 @@ LOGGING = {
 
 # SPARK Configuration
 SPARK_CONFIG_OPTION = {
-    "spark.executor.memory": os.getenv("SPARK_EXECUTOR_MEMORY", "4g"),
-    "spark.driver.memory": os.getenv("SPARK_DRIVER_MEMORY", "4g"),
-    "spark.executor.cores": os.getenv("SPARK_EXECUTOR_CORES", "2"),
-    "spark.num.executors": os.getenv("SPARK_NUM_EXECUTORS", "10"),
-    "spark.dynamicAllocation.enabled": os.getenv(
-        "SPARK_DYNAMIC_ALLOCATION_ENABLED", "true"
-    ),
-    "spark.dynamicAllocation.minExecutors": os.getenv(
-        "SPARK_DYNAMIC_ALLOCATION_MIN_EXECUTORS", "1"
-    ),
-    "spark.dynamicAllocation.maxExecutors": os.getenv(
-        "SPARK_DYNAMIC_ALLOCATION_MAX_EXECUTORS", "50"
-    ),
-    "spark.sql.shuffle.partitions": os.getenv("SPARK_SQL_SHUFFLE_PARTITIONS", "200"),
-    "spark.sql.adaptive.enabled": os.getenv("SPARK_SQL_ADAPTIVE_ENABLED", "true"),
-    "spark.sql.adaptive.shuffle.targetPostShuffleInputSize": os.getenv(
-        "SPARK_SQL_ADAPTIVE_SHUFFLE_TARGET_SIZE", "134217728"
-    ),
+    "spark.executor.memory": config.spark.EXECUTOR_MEMORY,
+    "spark.driver.memory": config.spark.DRIVER_MEMORY,
+    "spark.executor.cores": config.spark.EXECUTOR_CORES,
+    "spark.num.executors": config.spark.NUM_EXECUTORS,
+    "spark.dynamicAllocation.enabled": config.spark.DYNAMIC_ALLOCATION_ENABLED,
+    "spark.dynamicAllocation.minExecutors": config.spark.DYNAMIC_ALLOCATION_MAX_EXECUTORS,
+    "spark.dynamicAllocation.maxExecutors": config.spark.DYNAMIC_ALLOCATION_MAX_EXECUTORS,
+    "spark.sql.shuffle.partitions": config.spark.SQL_SHUFFLE_PARTITIONS,
+    "spark.sql.adaptive.enabled": config.spark.SQL_ADAPTIVE_ENABLED,
+    "spark.sql.adaptive.shuffle.targetPostShuffleInputSize": config.spark.SQL_ADAPTIVE_SHUFFLE_TARGET_SIZE,
 }
 
-SPARK_BAD_RECORDS_PATH = os.getenv(
-    "SPARK_BAD_RECORDS_PATH", "/flight_data/spark/records"
-)
+SPARK_BAD_RECORDS_PATH = config.spark.BAD_RECORDS_PATH
