@@ -1,6 +1,7 @@
 from pyspark.sql import SparkSession
 from datetime import datetime
 from django.db import IntegrityError
+from flight_processing.models import FlightTracking
 
 import logging
 from flight_processing.spark_utils.spark_processor import SparkProcessor
@@ -17,7 +18,7 @@ class ADSBProcessor:
         self.file_path = file_path
         self.batch_size = batch_size
 
-    def save_raw_data(self, df):
+    def save_to_django(self, df):
         try:
             total_rows = df.count()  # Get total number of rows in the DataFrame
             logger.info(f"Total rows in DataFrame: {total_rows}")
@@ -33,42 +34,14 @@ class ADSBProcessor:
                 # Collect the data from the batch
                 rows = batch.collect()
 
-                # Save the batch of data to Django
-                for row in rows:
-                    data = {
-                        "AircraftId": row.AircraftId,
-                        "Latitude": row.Latitude,
-                        "Longitude": row.Longitude,
-                        "Track": row.Track,
-                        "Altitude": row.Altitude,
-                        "Speed": row.Speed,
-                        "Squawk": row.Squawk,
-                        "Type": row.Type,
-                        "Registration": row.Registration,
-                        "LastUpdate": row.LastUpdate,
-                        "Origin": row.Origin,
-                        "Destination": row.Destination,
-                        "Flight": row.Flight,
-                        "Onground": row.Onground,
-                        "Vspeed": row.Vspeed,
-                        "Callsign": row.Callsign,
-                        "SourceType": row.SourceType,
-                        "ETA": row.ETA,
-                        "raw_data": row.asDict(),  # Store the entire row as JSON
-                    }
-                    logger.info(f"\nRAW DATA: {data}\n")
-                    # # Create and save the RawADSBData instance
-                    # try:
-                    #     # Save to Django model
-                    #     RawADSBData.objects.create(**data)
-                    #     logger.info(
-                    #         f"Saved ADS-B data for flight {row.Flight} (AircraftId: {row.AircraftId})"
-                    #     )
-                    # except IntegrityError as e:
-                    #     logger.error(f"Error saving data for flight {row.Flight}: {e}")
+                flight_tracking_objs = self._create_flight_tracking_in_batch(rows=rows)
+                self._save_flight_tracking_in_batch(
+                    flight_tracking_objs=flight_tracking_objs
+                )
 
         except Exception as e:
             logger.error(f"Error processing DataFrame and saving to Django: {e}")
+            raise e
 
     def process(self):
         try:
@@ -78,12 +51,61 @@ class ADSBProcessor:
 
             spark_processor = SparkProcessor()
 
+            # TODO: Need to detect if there is changes in field name
+            # TODO: Need add custom schema for spark data load
             # Load data into Spark
             df = spark_processor.load_json_data(self.file_path)
 
             # Save Raw data for future analytic
-            # self.save_raw_data(df=df)
+            self.save_to_django(df=df)
             logger.info(f"Processed ADS-B data and transformed at {datetime.now()}")
 
         except Exception as e:
             logger.error(f"Error processing ADS-B data: {e}")
+
+    def _process_timestamp_last_update(self, last_update):
+        """Convert Timestamp to Django UNIX timestmap compatible"""
+        return datetime.fromtimestamp(last_update)
+
+    def _save_flight_tracking_in_batch(self, flight_tracking_objs):
+        if flight_tracking_objs:
+            try:
+                FlightTracking.objects.bulk_create(flight_tracking_objs)
+                logger.info(f"Successfully saved {len(flight_tracking_objs)} flights.")
+            except Exception as e:
+                logger.error(f"Error saving flight records: {e}")
+
+    def _create_flight_tracking_in_batch(self, rows):
+        """Create flight tracking object in a list"""
+        try:
+            flight_tracking_objs = []
+            # Save the batch of data to Django
+            for row in rows:
+                data = {
+                    "aircraft_id": row.AircraftId,
+                    "registration": row.Registration,
+                    "flight": row.Flight,
+                    "callsign": row.Callsign,
+                    "aircraft_type": row.Type,
+                    "latitude": row.Latitude,
+                    "longitude": row.Longitude,
+                    "track": row.Track,
+                    "altitude": row.Altitude,
+                    "speed": row.Speed,
+                    "vspeed": row.Vspeed,
+                    "onground": row.Onground,
+                    "squawk": row.Squawk,
+                    "radar_id": row.RadarId,
+                    "source_type": row.SourceType,
+                    "origin": row.Origin,
+                    "destination": row.Destination,
+                    "last_update": self._process_timestamp_last_update(
+                        last_update=row.LastUpdate
+                    ),
+                    "eta": row.ETA,
+                }
+                flight_tracking_objs.append(FlightTracking(**data))
+            return flight_tracking_objs
+        except Exception as e:
+            logger.error(f"Error processing _create_flight_tracking_in_batch: {e}")
+            raise e

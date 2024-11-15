@@ -154,3 +154,41 @@ class FlightStatus(models.Model):
 
     class Meta:
         db_table = "flight_statuses"  # Custom table name
+
+
+class FlightTracking(models.Model):
+    # Aircraft and flight details
+    aircraft_id = models.CharField(max_length=10)  # AircraftId
+    registration = models.CharField(max_length=20)  # Registration
+    flight = models.CharField(max_length=10)
+    callsign = models.CharField(max_length=10)
+    aircraft_type = models.CharField(max_length=20)  # New field for aircraft type
+
+    # Geographic information
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    track = models.IntegerField()
+
+    # Flight data
+    altitude = models.IntegerField()
+    speed = models.IntegerField()
+    vspeed = models.IntegerField()  # Vertical speed (climb or descent)
+
+    # Aircraft status
+    onground = models.BooleanField()
+    squawk = models.IntegerField()  # Transponder code
+
+    # Radar and source information
+    radar_id = models.CharField(max_length=10, blank=True, null=True)
+    source_type = models.CharField(max_length=50)
+
+    # Flight route
+    origin = models.CharField(max_length=3)  # IATA code for origin
+    destination = models.CharField(max_length=3)  # IATA code for destination
+
+    # Flight ETA and update timestamps
+    eta = models.IntegerField()  # ETA (could be a timestamp)
+    last_update = models.DateTimeField()  # Last update timestamp
+
+    class Meta:
+        db_table = "flight_trackings"  # Custom table name
