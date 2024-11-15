@@ -40,7 +40,96 @@ class OAGProcessor:
         df_with_delays = self.get_is_delayed_from_status(df_with_delays)
 
         # Optionally, save processed data to database
-        self.save_flight_and_status_to_django(df_with_delays)
+        self.save_to_django(df_with_delays)
+
+    def save_to_django(self, df_with_delays):
+        """
+        Save the calculated flight and status data into Django models (Flight and FlightStatus).
+        """
+        logger.info("Saving Processed Data..")
+
+        # Define the lists to hold flight and flight status objects
+        flight_objs = []
+        flight_status_objs = []
+
+        # Loop through the rows in the DataFrame (df_with_delays)
+        for row in df_with_delays.collect():
+            # Get or create related records (Airline, Airport)
+            airline, departure_airport, arrival_airport = (
+                self.get_or_create_airlines_and_airports(row)
+            )
+
+            # Parse datetime fields
+            departure_time_utc = self.parse_datetime(
+                row["departure_date_utc"], row["departure_time_utc"]
+            )
+            arrival_time_utc = self.parse_datetime(
+                row["arrival_date_utc"], row["arrival_time_utc"]
+            )
+
+            # Skip if datetime parsing fails
+            if not departure_time_utc or not arrival_time_utc:
+                continue
+
+            # Parse additional times with fallback checks
+            departure_estimated_outGate = (
+                self.parse_datetime(
+                    row["departure_estimated_outGate"], "", "%Y-%m-%dT%H:%M:%S%z"
+                )
+                if row["departure_estimated_outGate"]
+                else None
+            )
+            departure_actual_outGate = (
+                self.parse_datetime(
+                    row["departure_actual_outGate"], "", "%Y-%m-%dT%H:%M:%S%z"
+                )
+                if row["departure_actual_outGate"]
+                else None
+            )
+            arrival_estimated_inGate = (
+                self.parse_datetime(
+                    row["arrival_estimated_inGate"], "", "%Y-%m-%dT%H:%M:%S%z"
+                )
+                if row["arrival_estimated_inGate"]
+                else None
+            )
+            arrival_actual_inGate = (
+                self.parse_datetime(
+                    row["arrival_actual_inGate"], "", "%Y-%m-%dT%H:%M:%S%z"
+                )
+                if row["arrival_actual_inGate"]
+                else None
+            )
+
+            # Create the Flight record
+            flight = self.create_flight(
+                row,
+                airline,
+                departure_airport,
+                arrival_airport,
+                departure_time_utc,
+                arrival_time_utc,
+                departure_actual_outGate,
+                arrival_actual_inGate,
+            )
+            flight_objs.append(flight)
+
+            # Create the FlightStatus record
+            flight_status = self.create_flight_status(
+                row,
+                flight,
+                departure_estimated_outGate,
+                departure_actual_outGate,
+                arrival_estimated_inGate,
+                arrival_actual_inGate,
+            )
+            if flight_status:
+                flight_status_objs.append(flight_status)
+
+        # Bulk create the records in Django
+        self.bulk_create_records(flight_objs, flight_status_objs)
+
+        logger.info("Saving process completed.")
 
     def filter_data(self, df):
         df = df.filter(col("flightType") == "Scheduled")
@@ -253,7 +342,6 @@ class OAGProcessor:
             flight_type=row["flightType"],
             departure_is_delayed=row["departure_is_delayed"],
             arrival_is_delayed=row["arrival_is_delayed"],
-
         )
 
     def create_flight_status(
@@ -305,92 +393,3 @@ class OAGProcessor:
                 )
             except Exception as e:
                 logger.error(f"Error saving flight status records: {e}")
-
-    def save_flight_and_status_to_django(self, df_with_delays):
-        """
-        Save the calculated flight and status data into Django models (Flight and FlightStatus).
-        """
-        logger.info("Saving Processed Data..")
-
-        # Define the lists to hold flight and flight status objects
-        flight_objs = []
-        flight_status_objs = []
-
-        # Loop through the rows in the DataFrame (df_with_delays)
-        for row in df_with_delays.collect():
-            # Get or create related records (Airline, Airport)
-            airline, departure_airport, arrival_airport = (
-                self.get_or_create_airlines_and_airports(row)
-            )
-
-            # Parse datetime fields
-            departure_time_utc = self.parse_datetime(
-                row["departure_date_utc"], row["departure_time_utc"]
-            )
-            arrival_time_utc = self.parse_datetime(
-                row["arrival_date_utc"], row["arrival_time_utc"]
-            )
-
-            # Skip if datetime parsing fails
-            if not departure_time_utc or not arrival_time_utc:
-                continue
-
-            # Parse additional times with fallback checks
-            departure_estimated_outGate = (
-                self.parse_datetime(
-                    row["departure_estimated_outGate"], "", "%Y-%m-%dT%H:%M:%S%z"
-                )
-                if row["departure_estimated_outGate"]
-                else None
-            )
-            departure_actual_outGate = (
-                self.parse_datetime(
-                    row["departure_actual_outGate"], "", "%Y-%m-%dT%H:%M:%S%z"
-                )
-                if row["departure_actual_outGate"]
-                else None
-            )
-            arrival_estimated_inGate = (
-                self.parse_datetime(
-                    row["arrival_estimated_inGate"], "", "%Y-%m-%dT%H:%M:%S%z"
-                )
-                if row["arrival_estimated_inGate"]
-                else None
-            )
-            arrival_actual_inGate = (
-                self.parse_datetime(
-                    row["arrival_actual_inGate"], "", "%Y-%m-%dT%H:%M:%S%z"
-                )
-                if row["arrival_actual_inGate"]
-                else None
-            )
-
-            # Create the Flight record
-            flight = self.create_flight(
-                row,
-                airline,
-                departure_airport,
-                arrival_airport,
-                departure_time_utc,
-                arrival_time_utc,
-                departure_actual_outGate,
-                arrival_actual_inGate,
-            )
-            flight_objs.append(flight)
-
-            # Create the FlightStatus record
-            flight_status = self.create_flight_status(
-                row,
-                flight,
-                departure_estimated_outGate,
-                departure_actual_outGate,
-                arrival_estimated_inGate,
-                arrival_actual_inGate,
-            )
-            if flight_status:
-                flight_status_objs.append(flight_status)
-
-        # Bulk create the records in Django
-        self.bulk_create_records(flight_objs, flight_status_objs)
-
-        logger.info("Saving process completed.")
