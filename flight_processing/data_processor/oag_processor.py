@@ -43,7 +43,7 @@ class OAGProcessor(BaseProcessor):
         # Optionally, save processed data to database
         self.save_to_django(df_with_delays)
 
-    def save_to_django(self, df_with_delays):
+    def save_to_django(self, df):
         """
         Save the calculated flight and status data into Django models (Flight and FlightStatus).
         """
@@ -53,8 +53,8 @@ class OAGProcessor(BaseProcessor):
         flight_objs = []
         flight_status_objs = []
 
-        # Loop through the rows in the DataFrame (df_with_delays)
-        for row in df_with_delays.collect():
+        # Loop through the rows in the DataFrame (df)
+        for row in df.collect():
             # Get or create related records (Airline, Airport)
             airline, departure_airport, arrival_airport = (
                 self.get_or_create_airlines_and_airports(row)

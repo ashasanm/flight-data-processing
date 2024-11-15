@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 from flight_processing.models import FlightTracking
+from pyspark.sql import DataFrame, Row
 
 from flight_processing.spark_utils.spark_processor import SparkProcessor
 from flight_processing.data_processor._base import BaseProcessor
@@ -17,7 +18,7 @@ class ADSBProcessor(BaseProcessor):
         self.file_path = file_path
         self.batch_size = batch_size
 
-    def save_to_django(self, df):
+    def save_to_django(self, df: DataFrame) -> None:
         try:
             total_rows = df.count()  # Get total number of rows in the DataFrame
             logger.info(f"Total rows in DataFrame: {total_rows}")
@@ -42,7 +43,7 @@ class ADSBProcessor(BaseProcessor):
             logger.error(f"Error processing DataFrame and saving to Django: {e}")
             raise e
 
-    def process(self):
+    def process(self) -> None:
         try:
             logger.info(
                 f"Processing ADS-B data from {self.file_path} at {datetime.now()}"
@@ -62,11 +63,13 @@ class ADSBProcessor(BaseProcessor):
         except Exception as e:
             logger.error(f"Error processing ADS-B data: {e}")
 
-    def _process_timestamp_last_update(self, last_update):
+    def _process_timestamp_last_update(self, last_update: int) -> datetime:
         """Convert Timestamp to Django UNIX timestmap compatible"""
         return datetime.fromtimestamp(last_update)
 
-    def _save_flight_tracking_in_batch(self, flight_tracking_objs):
+    def _save_flight_tracking_in_batch(
+        self, flight_tracking_objs: list[FlightTracking]
+    ) -> None:
         if flight_tracking_objs:
             try:
                 FlightTracking.objects.bulk_create(flight_tracking_objs)
@@ -74,7 +77,7 @@ class ADSBProcessor(BaseProcessor):
             except Exception as e:
                 logger.error(f"Error saving flight records: {e}")
 
-    def _create_flight_tracking_in_batch(self, rows):
+    def _create_flight_tracking_in_batch(self, rows: list[Row]) -> list[FlightTracking]:
         """Create flight tracking object in a list"""
         try:
             flight_tracking_objs = []
