@@ -1,15 +1,14 @@
-from pyspark.sql import SparkSession
+import logging
 from datetime import datetime
-from django.db import IntegrityError
 from flight_processing.models import FlightTracking
 
-import logging
 from flight_processing.spark_utils.spark_processor import SparkProcessor
+from flight_processing.data_processor._base import BaseProcessor
 
 logger = logging.getLogger(__name__)
 
 
-class ADSBProcessor:
+class ADSBProcessor(BaseProcessor):
     def __init__(
         self,
         file_path: str = "flight_data/data/adsb_multi_aircraft.json",

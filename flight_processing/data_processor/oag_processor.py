@@ -7,6 +7,7 @@ from pyspark.sql.types import FloatType
 from flight_processing.models import Airline, Airport, Flight, FlightStatus
 import logging
 from flight_processing.spark_utils.spark_processor import SparkProcessor
+from flight_processing.data_processor._base import BaseProcessor
 
 # Initialize Django environment
 django.setup()
@@ -15,7 +16,7 @@ django.setup()
 logger = logging.getLogger("flight_processing")
 
 
-class OAGProcessor:
+class OAGProcessor(BaseProcessor):
     def __init__(
         self,
         file_path: str = "flight_data/data/oag_multiple.json",
