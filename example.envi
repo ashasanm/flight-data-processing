@@ -1,4 +1,5 @@
 # Database settings
+# Should separate .env for local, dev and production
 POSTGRES_DB=xx
 POSTGRES_USER=xx
 POSTGRES_PASSWORD=xx
